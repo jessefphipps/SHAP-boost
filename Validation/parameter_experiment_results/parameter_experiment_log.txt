@@ -1,0 +1,27 @@
+=============210922_173631==============
+Description: Parameter experiment with full features available
+Output file: parameter_experiment_results/210922_173631.csv
+Level 1 feature selection: roc
+Meta classifier feature selection: roc
+Dropped features: ['mort_day_censored', 'censor_flg']
+Number of models trained: 108
+xgb_n_estimators_range: range(1, 152, 50)
+xgb_max_depth_range: range(2, 5)
+KNN_n_neighbors_range: range(2, 5)
+MLP_alpha_range: [0.0001 0.001  0.01  ]
+
+
+
+=============210922_173639==============
+Description: Parameter experiment without top 3 features
+Output file: parameter_experiment_results/210922_173639.csv
+Level 1 feature selection: roc
+Meta classifier feature selection: roc
+Dropped features: ['mort_day_censored', 'censor_flg', 'hosp_exp_flg', 'icu_exp_flg', 'stroke_flg']
+Number of models trained: 108
+xgb_n_estimators_range: range(1, 152, 50)
+xgb_max_depth_range: range(2, 5)
+KNN_n_neighbors_range: range(2, 5)
+MLP_alpha_range: [0.0001 0.001  0.01  ]
+
+
