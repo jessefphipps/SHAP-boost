@@ -7,7 +7,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from tqdm.notebook import tqdm
 
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, roc_curve
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, roc_curve, recall_score, precision_score
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
 from sklearn.svm import NuSVC, SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import OneHotEncoder
@@ -62,7 +64,7 @@ def add_shap_pred_proba_to_df(model, model_type, df, index_shap=True, features=[
     df = add_predict_proba_to_df(model=model, model_type=model_type, df=df, features=features)
     return df
     
-def prepare_csv_data(filepath, y_label, hot_encode_labels=[], features_to_drop=[],  test_size=0.33):
+def prepare_csv_data(filepath, y_label, hot_encode_labels=[], features_to_drop=[],  test_size=0.33, operation='dropna'):
     df = pd.read_csv(filepath)
     
     if features_to_drop:
@@ -77,8 +79,13 @@ def prepare_csv_data(filepath, y_label, hot_encode_labels=[], features_to_drop=[
         df = df.join(enc_df)
         df = df.drop(columns=[label])
     
-    df = df.dropna()
-    
+    if operation == 'dropna':
+        df = df.dropna()
+    if operation == 'iterative_imputer':
+        columns = df.columns
+        imp_mean = IterativeImputer(random_state=98)
+        df = pd.DataFrame(imp_mean.fit_transform(df), columns=columns)
+        
     y = df[y_label].copy()
     df = df.drop(columns=[y_label])
     X = df.copy()
@@ -163,13 +170,17 @@ def train_meta_model(model_parameters, stacked_model, X_train, y_train, level_1_
     for feat in level_1_features:
         shap_columns += [feat + '_' + model_type + '_shap' for model_type in stacked_model.keys()]
     
-    meta_features = feature_selection_fun_full(X_train.drop(columns=shap_columns), y_train, selection_technique=feature_selection_technique, correlation=True)
+    meta_features = feature_selection_fun_full(X_train.drop(columns=shap_columns+level_1_features), y_train, selection_technique=feature_selection_technique, correlation=True)
 
-    meta_shap_features = feature_selection_fun_full(X_train, y_train, selection_technique=feature_selection_technique, correlation=True)   
+    meta_shap_features = feature_selection_fun_full(X_train.drop(columns=level_1_features), y_train, selection_technique=feature_selection_technique, correlation=True)   
     
-    stacked_model['meta'] = SVC(kernel='linear', probability=True).fit(X_train[meta_features], y_train)
+#     stacked_model['meta'] = SVC(kernel='linear', probability=True).fit(X_train[meta_features], y_train)
     
-    stacked_model['meta_shap'] = SVC(kernel='linear', probability=True).fit(X_train[meta_shap_features], y_train)
+#     stacked_model['meta_shap'] = SVC(kernel='linear', probability=True).fit(X_train[meta_shap_features], y_train)
+
+    stacked_model['meta'] = MLPClassifier(activation = "relu", alpha = 0.01, hidden_layer_sizes = (10,10,10), learning_rate = "constant", max_iter = model_parameters['MLP']['max_iter'], random_state = 1000).fit(X_train[meta_features], y_train)
+    
+    stacked_model['meta_shap'] = MLPClassifier(activation = "relu", alpha = 0.01, hidden_layer_sizes = (10,10,10), learning_rate = "constant", max_iter = model_parameters['MLP']['max_iter'], random_state = 1000).fit(X_train[meta_shap_features], y_train)
     
 #     display('Meta features: ', meta_features)
     
@@ -291,13 +302,24 @@ def train_stacked_model_full(model_parameters, X_train, y_train):
 def test_stacked_model_full(model_parameters, stacked_model, X_test, y_test):
     X_test = add_shap_pred_proba_to_level_1(model_parameters=model_parameters, stacked_model=stacked_model, X=X_test, y=y_test, features=stacked_model['level_1_features'])
     
+    meta_predict = stacked_model['meta'].predict(X_test[stacked_model['meta_features']])
+    meta_shap_predict = stacked_model['meta_shap'].predict(X_test[stacked_model['meta_shap_features']])
+    
     roc_no_shap = roc_auc_score(y_test, stacked_model['meta'].predict_proba(X_test[stacked_model['meta_features']])[:, 1])
     roc_shap = roc_auc_score(y_test, stacked_model['meta_shap'].predict_proba(X_test[stacked_model['meta_shap_features']])[:, 1])
     
-    acc_no_shap = accuracy_score(y_test, stacked_model['meta'].predict(X_test[stacked_model['meta_features']]))
-    acc_shap = accuracy_score(y_test, stacked_model['meta_shap'].predict(X_test[stacked_model['meta_shap_features']]))
+    acc_no_shap = accuracy_score(y_test, meta_predict)
+    acc_shap = accuracy_score(y_test, meta_shap_predict)
     
-    return roc_no_shap, roc_shap, acc_no_shap, acc_shap
+    precision_no_shap = precision_score(y_test, meta_predict)
+    recall_no_shap = recall_score(y_test, meta_predict)
+    specificity_no_shap = recall_score(y_test, meta_predict, pos_label=0)
+
+    precision_shap = precision_score(y_test, meta_shap_predict)
+    recall_shap = recall_score(y_test, meta_shap_predict)
+    specificity_shap = recall_score(y_test, meta_shap_predict, pos_label=0)
+    
+    return roc_no_shap, roc_shap, acc_no_shap, acc_shap, precision_no_shap, precision_shap, recall_no_shap, recall_shap, specificity_no_shap, specificity_shap
     
 #     print('ROC W/O SHAP: ', roc_no_shap)
 #     print('ROC W/ SHAP: ', roc_shap)

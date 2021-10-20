@@ -59,7 +59,7 @@ num_models = len(xgb_n_estimators_range)*len(xgb_max_depth_range)*len(KNN_n_neig
 
 print('Number of models to be trained: ' + str(len(xgb_n_estimators_range)*len(xgb_max_depth_range)*len(KNN_n_neighbors_range)*len(MLP_alpha_range)))
 
-df_columns = ['xgb_n_estimators', 'xgb_max_range', 'KNN_n_neighbors', 'MLP_alpha', 'level_1_feats', 'meta_feats', 'meta_feats_shap', 'roc_no_shap', 'roc_shap', 'acc_no_shap', 'acc_shap']
+df_columns = ['xgb_n_estimators', 'xgb_max_range', 'KNN_n_neighbors', 'MLP_alpha', 'level_1_feats', 'meta_feats', 'meta_feats_shap', 'roc_no_shap', 'roc_shap', 'acc_no_shap', 'acc_shap', 'precision_no_shap', 'precision_shap', 'recall_no_shap', 'recall_shap', 'specificity_no_shap', 'specificity_shap']
 
 now = datetime.now()
 
@@ -84,7 +84,7 @@ with open('parameter_experiment_results/parameter_experiment_log.txt', 'a') as l
     log_file.write('\n\n')
 
 with open(output_filename, "w") as csv_file:
-    csv_file.write('xgb_n_estimators,xgb_max_range,KNN_n_neighbors,MLP_alpha,level_1_feats,meta_feats,meta_feats_shap,roc_no_shap,roc_shap,acc_no_shap,acc_shap\n')
+    csv_file.write('xgb_n_estimators,xgb_max_range,KNN_n_neighbors,MLP_alpha,level_1_feats,meta_feats,meta_feats_shap,roc_no_shap,roc_shap,acc_no_shap,acc_shap,precision_no_shap,precision_shap,recall_no_shap,recall_shap,specificity_no_shap,specificity_shap\n')
     for xgb_n_estimators in xgb_n_estimators_range:
         model_parameters['xgb']['n_estimators'] = xgb_n_estimators
         for xgb_max_depth in xgb_max_depth_range:
@@ -95,7 +95,7 @@ with open(output_filename, "w") as csv_file:
                     X_train, X_test, y_train, y_test = prepare_csv_data(filepath=filepath, y_label=y_label, hot_encode_labels=hot_encode_labels, features_to_drop=features_to_drop)
                     model_parameters['MLP']['alpha'] = MLP_alpha
                     stacked_model = train_stacked_model_full(model_parameters, X_train, y_train)
-                    roc_no_shap, roc_shap, acc_no_shap, acc_shap = test_stacked_model_full(model_parameters, stacked_model, X_test, y_test)
+                    roc_no_shap, roc_shap, acc_no_shap, acc_shap, precision_no_shap, precision_shap, recall_no_shap, recall_shap, specificity_no_shap, specificity_shap = test_stacked_model_full(model_parameters, stacked_model, X_test, y_test)
                     new_row = {
                         'xgb_n_estimators': model_parameters['xgb']['n_estimators'],
                         'xgb_max_range': model_parameters['xgb']['max_depth'],
@@ -108,6 +108,12 @@ with open(output_filename, "w") as csv_file:
                         'roc_shap': roc_shap,
                         'acc_no_shap': acc_no_shap,
                         'acc_shap': acc_shap,
+                        'precision_no_shap': precision_no_shap,
+                        'precision_shap': precision_shap,
+                        'recall_no_shap': recall_no_shap,
+                        'recall_shap': recall_shap,
+                        'specificity_no_shap': specificity_no_shap,
+                        'specificity_shap': specificity_shap
                     }
                     df_row = pd.DataFrame.from_dict(new_row)
                     csv_row = df_row.to_csv(index=False, header=False)

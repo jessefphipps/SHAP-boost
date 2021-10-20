@@ -25,3 +25,31 @@ KNN_n_neighbors_range: range(2, 5)
 MLP_alpha_range: [0.0001 0.001  0.01  ]
 
 
+
+=============210928_202445==============
+Description: Parameter experiment without top 3 features 
+Output file: parameter_experiment_results/210928_202445.csv
+Level 1 feature selection: roc
+Meta classifier feature selection: roc
+Dropped features: ['mort_day_censored', 'censor_flg', 'hosp_exp_flg', 'icu_exp_flg', 'stroke_flg']
+Number of models trained: 625
+xgb_n_estimators_range: range(1, 202, 50)
+xgb_max_depth_range: range(2, 11, 2)
+KNN_n_neighbors_range: range(2, 11, 2)
+MLP_alpha_range: [1.e-04 1.e-03 1.e-02 1.e-01 1.e+00]
+
+
+
+=============210930_155323==============
+Description: Parameter experiment without top 3 features 
+Output file: parameter_experiment_results/210930_155323.csv
+Level 1 feature selection: roc
+Meta classifier feature selection: roc
+Dropped features: ['mort_day_censored', 'censor_flg', 'hosp_exp_flg', 'icu_exp_flg', 'stroke_flg']
+Number of models trained: 625
+xgb_n_estimators_range: range(1, 202, 50)
+xgb_max_depth_range: range(2, 11, 2)
+KNN_n_neighbors_range: range(2, 11, 2)
+MLP_alpha_range: [1.e-04 1.e-03 1.e-02 1.e-01 1.e+00]
+
+
